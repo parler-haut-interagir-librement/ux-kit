@@ -1,4 +1,4 @@
-<!-- phil-dev source-sha256=fc5b0af915a59579151eeb3b61a83430f218af91136fecc5bbf19bdbb5854ff4 -->
+<!-- phil-dev source-sha256=92c23a64642af4f9f52637f6732b76a82e2581acc832e6c490bfdf0e17c87c6e -->
 # Référence
 
 | Fichier | Ce que c'est |
@@ -121,8 +121,8 @@
 | `color-picker/templates/components/` | Le composant `ColorPicker` |
 | `color-picker/assets/controllers/` | Le contrôleur Stimulus de la recette |
 | `date-picker/manifest.json`, `date-picker/README.md` | La recette `DatePicker` |
-| `date-picker/templates/components/` | Le composant `DatePicker` |
-| `date-picker/assets/controllers/` | Le contrôleur Stimulus de la recette |
+| `date-picker/templates/components/` | Le composant `DatePicker` : une date, ou avec `range` le début et la fin d'une plage sur deux mois |
+| `date-picker/assets/controllers/` | Le contrôleur Stimulus de la recette, et ses fonctions `iso`, `parse`, `weeks`, `addMonths`, `monthOf`, `shownFrom` et `ordered` |
 | `copy-button/manifest.json`, `copy-button/README.md` | La recette `CopyButton` |
 | `copy-button/templates/components/` | Le composant `CopyButton` |
 | `copy-button/assets/controllers/` | Le contrôleur Stimulus de la recette |
@@ -191,3 +191,13 @@
 | `chart/templates/components/` | Le composant `Chart` |
 | `chart-js/manifest.json`, `chart-js/README.md` | La recette `ChartJs` |
 | `chart-js/templates/components/` | Le composant `ChartJs` |
+| `theme-switcher/manifest.json`, `theme-switcher/README.md` | La recette `ThemeSwitcher` |
+| `theme-switcher/templates/components/` | Le composant `ThemeSwitcher` et son `Script` |
+| `theme-switcher/assets/controllers/` | Le contrôleur Stimulus de la recette |
+| `sticky-header/manifest.json`, `sticky-header/README.md` | La recette `StickyHeader` |
+| `sticky-header/templates/components/` | Le composant `StickyHeader` |
+| `sticky-header/assets/controllers/` | Le contrôleur Stimulus de la recette |
+| `timeline/manifest.json`, `timeline/README.md` | La recette `Timeline` |
+| `timeline/templates/components/` | Le composant `Timeline` et son `Item` |
+| `floating-label/manifest.json`, `floating-label/README.md` | La recette `FloatingLabel` |
+| `floating-label/templates/components/` | Le composant `FloatingLabel` |
