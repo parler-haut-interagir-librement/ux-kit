@@ -22,9 +22,10 @@ use PHPUnit\Framework\Attributes\DataProvider;
 final class InteractiveRecipesTest extends BrowserTestCase
 {
     /**
-     * Whether a pixel of the canvas of the celebration has been drawn.
+     * Whether a pixel of the canvas of the celebration has been drawn: the canvas copied on another, so that a canvas
+     * handed to a worker, which no longer gives a context of its own, is read through what it shows.
      */
-    private const string DRAWN = '(() => { const canvas = document.querySelector("#victory canvas"); if (!canvas) { return false; } const pixels = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data; for (let alpha = 3; alpha < pixels.length; alpha += 4) { if (pixels[alpha] > 0) { return true; } } return false; })()';
+    private const string DRAWN = '(() => { const canvas = document.querySelector("#victory canvas"); if (!canvas || 0 === canvas.width || 0 === canvas.height) { return false; } const copy = document.createElement("canvas"); copy.width = canvas.width; copy.height = canvas.height; const context = copy.getContext("2d"); try { context.drawImage(canvas, 0, 0); } catch { return false; } const pixels = context.getImageData(0, 0, copy.width, copy.height).data; for (let alpha = 3; alpha < pixels.length; alpha += 4) { if (pixels[alpha] > 0) { return true; } } return false; })()';
 
     /**
      * Counts, in `window.drawn`, the canvases that come into the celebration.
@@ -1071,6 +1072,31 @@ final class InteractiveRecipesTest extends BrowserTestCase
     }
 
     /**
+     * Under reduced motion, every effect says its message and draws nothing, as the default one does.
+     */
+    #[DataProvider('plainAndStrict')]
+    public function testEveryEffectSaysItsMessageAndDrawsNothingUnderReducedMotion(string $page): void
+    {
+        $this->emulate([['name' => 'prefers-reduced-motion', 'value' => 'reduce']]);
+
+        try {
+            $this->open($page);
+            $this->perform(self::WATCH);
+
+            foreach (['confetti', 'fireworks', 'lasers', 'balloons', 'shooting-stars', 'streamers', 'coins', 'bubbles', 'aurora', 'spotlight', 'trophy'] as $effect) {
+                $this->perform(\sprintf('window.dispatchEvent(new CustomEvent("celebrate", {detail: {message: "Won with %1$s", effect: "%1$s"}}))', $effect));
+                $this->waitUntil(\sprintf('document.querySelector("#victory .isCelebrationMessage").textContent === "Won with %s"', $effect));
+            }
+
+            usleep(300_000);
+
+            self::assertSame(0, $this->read('window.drawn'));
+        } finally {
+            $this->emulate([]);
+        }
+    }
+
+    /**
      * A celebration on a page that arrives on a victory plays as soon as it connects; removed from the page, it stops at
      * once and leaves the page free for the next one.
      */
@@ -1102,6 +1128,9 @@ final class InteractiveRecipesTest extends BrowserTestCase
 
         self::assertSame([], $this->axe('#celebrations'));
 
+        // Six seconds of play rather than one and a half, so that a busy machine still finds the canvas and the
+        // message together.
+        $this->perform('document.querySelector("#victory").dataset.celebrationDurationValue = "6000"');
         $this->click('#celebrate');
         $this->waitUntil('document.querySelector("#victory canvas") && document.querySelector("#victory .isCelebrationMessage").textContent !== ""');
 
@@ -1212,7 +1241,9 @@ final class InteractiveRecipesTest extends BrowserTestCase
     }
 
     /**
-     * The violations axe-core finds in a part of the page, each rule with the parts it found it in.
+     * The violations axe-core finds in a part of the page, each rule with the parts it found it in, once the transitions
+     * of that part have ended, two seconds at most: a colour read halfway through its transition is neither the one
+     * before nor the one after.
      *
      * @return list<string>
      */
@@ -1220,7 +1251,7 @@ final class InteractiveRecipesTest extends BrowserTestCase
     {
         $this->browser()->manage()->timeouts()->setScriptTimeout(30);
         $violations = $this->browser()->executeAsyncScript(\sprintf(
-            'const done = arguments[arguments.length - 1]; axe.run(document.querySelector(%s), {runOnly: {type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]}}).then((result) => done(result.violations.map((violation) => violation.id + ": " + violation.nodes.map((node) => node.target.join(" ")).join(", "))), (error) => done(["axe: " + error]));',
+            'const done = arguments[arguments.length - 1], root = document.querySelector(%s); Promise.race([Promise.all(root.getAnimations({subtree: true}).filter((animation) => "running" === animation.playState && Number.isFinite(animation.effect?.getComputedTiming().endTime)).map((animation) => animation.finished.catch(() => null))), new Promise((resolve) => setTimeout(resolve, 2000))]).then(() => axe.run(root, {runOnly: {type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]}}).then((result) => done(result.violations.map((violation) => violation.id + ": " + violation.nodes.map((node) => node.target.join(" ")).join(", "))), (error) => done(["axe: " + error])));',
             json_encode($selector, \JSON_THROW_ON_ERROR),
         ));
         self::assertIsArray($violations);
