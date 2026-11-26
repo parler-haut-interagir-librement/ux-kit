@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Phil\UxKit\Tests\Functional;
 
+use Phil\UxKit\Application\CelebrationStream;
 use PHPUnit\Framework\Attributes\CoversNothing;
 
 #[CoversNothing]
@@ -14,7 +15,7 @@ final class CelebrationTest extends KitTestCase
     public function testItWaitsWithAnEmptyLiveRegionAndItsCanvasInATemplate(): void
     {
         self::assertSame(
-            '<div data-celebration-message-value="You won" data-celebration-messages-value="[]" data-celebration-effect-value="confetti" data-celebration-autoplay-value="false" data-celebration-duration-value="2500" data-celebration-focus-value="" data-celebration-colors-value="'.self::COLORS.'" class="isCelebration" data-controller="celebration">'
+            '<div data-celebration-message-value="You won" data-celebration-messages-value="[]" data-celebration-effect-value="confetti" data-celebration-autoplay-value="false" data-celebration-duration-value="2500" data-celebration-focus-value="" data-celebration-reaction-value="" data-celebration-shapes-value="[]" data-celebration-mascot-value="" data-celebration-vibrate-value="false" data-celebration-colors-value="'.self::COLORS.'" class="isCelebration" data-controller="celebration">'
             .'<p class="isCelebrationMessage" role="status" aria-live="polite" data-celebration-target="message"></p>'
             .'<template data-celebration-target="stage"><canvas class="isCelebrationCanvas" aria-hidden="true"></canvas></template></div>',
             $this->render('<twig:Celebration message="You won" />'),
@@ -39,7 +40,7 @@ final class CelebrationTest extends KitTestCase
 
     public function testEveryEffectOfTheControllerIsKept(): void
     {
-        foreach (['confetti', 'fireworks', 'lasers', 'balloons', 'shooting-stars', 'streamers', 'coins', 'bubbles', 'aurora', 'spotlight', 'trophy'] as $effect) {
+        foreach (CelebrationStream::EFFECTS as $effect) {
             self::assertStringContainsString(\sprintf('data-celebration-effect-value="%s"', $effect), $this->render(\sprintf('<twig:Celebration effect="%s" />', $effect)));
         }
     }
@@ -71,6 +72,28 @@ final class CelebrationTest extends KitTestCase
             $this->render("{{ celebrate('First <place>', 'trophy', '#winner') }}"),
         );
         self::assertSame('<turbo-stream action="celebrate" effect="confetti"><template></template></turbo-stream>', $this->render('{{ celebrate() }}'));
+        self::assertSame('<turbo-stream action="celebrate" effect="reactions" reaction="👍"><template></template></turbo-stream>', $this->render("{{ celebrate(effect: 'reactions', reaction: '👍') }}"));
+    }
+
+    public function testTheReactionTheShapesTheMascotAndTheVibrationOfTheSite(): void
+    {
+        $html = $this->render('<twig:Celebration effect="shapes" reaction="<3" :shapes="[\'/logo.svg\', \'\', \'/a.svg\', \'/b.svg\', \'/c.svg\', \'/d.svg\', \'/e.svg\', \'/f.svg\', \'/g.svg\', \'/h.svg\']" mascot="/gnome.svg" :vibrate="true" />');
+
+        self::assertStringContainsString('data-celebration-effect-value="shapes"', $html);
+        self::assertStringContainsString('data-celebration-reaction-value="&lt;3"', $html);
+        self::assertStringContainsString('data-celebration-shapes-value="[&quot;\/logo.svg&quot;,&quot;\/a.svg&quot;,&quot;\/b.svg&quot;,&quot;\/c.svg&quot;,&quot;\/d.svg&quot;,&quot;\/e.svg&quot;,&quot;\/f.svg&quot;,&quot;\/g.svg&quot;]"', $html, 'eight at most, none empty');
+        self::assertStringContainsString('data-celebration-mascot-value="/gnome.svg"', $html);
+        self::assertStringContainsString('data-celebration-vibrate-value="true"', $html);
+    }
+
+    public function testTheButtonOfTheSoundsOnlyWhenAskedPressedByNoOneAtFirst(): void
+    {
+        self::assertStringNotContainsString('<button', $this->render('<twig:Celebration message="Yes" />'));
+        self::assertStringContainsString(
+            '<button type="button" class="isCelebrationSound" aria-pressed="false" data-celebration-target="sound" data-action="celebration#toggleSound">Sons</button><p class="isCelebrationMessage"',
+            $this->render('<twig:Celebration message="Yes" :sounds="true" soundLabel="Sons" />'),
+        );
+        self::assertStringContainsString('data-action="celebration#toggleSound">Sounds</button>', $this->render('<twig:Celebration :sounds="true" />'));
     }
 
     public function testItsMessagesInTheLanguageOfTheRequestOrOfTheLocaleGiven(): void
@@ -79,6 +102,30 @@ final class CelebrationTest extends KitTestCase
         self::assertSame('Well done!', $this->render('{{ celebration_messages()|first }}'));
         [$html] = $this->renderInRequest("{{ app.request.setLocale('fr') }}{{ celebration_messages()|first }}");
         self::assertSame('Bien joué!', $html);
+    }
+
+    /**
+     * The live examples of its README, which a demo renders: a button for each effect, and nothing that plays on load.
+     */
+    public function testTheExamplesOfItsReadmeOfferAButtonForEachEffectAndNothingPlaysOnLoad(): void
+    {
+        $readme = (string) file_get_contents(\dirname(__DIR__, 2).'/celebration/README.md');
+        self::assertGreaterThan(1, preg_match_all('/^```twig \{"preview":true\}\R(.*?)\R```$/ms', $readme, $examples));
+        $html = implode("\n", array_map($this->render(...), $examples[1]));
+
+        foreach (CelebrationStream::EFFECTS as $effect) {
+            self::assertStringContainsString(\sprintf('<button type="button" data-action="celebration#play" data-celebration-effect-param="%s">', $effect), $html, $effect);
+        }
+
+        self::assertStringNotContainsString('data-celebration-autoplay-value="true"', $html);
+        self::assertStringNotContainsString('<turbo-stream', $html);
+    }
+
+    public function testItsEffectNamesEachEffectOfTheControllerInItsType(): void
+    {
+        $template = (string) file_get_contents(\dirname(__DIR__, 2).'/celebration/templates/components/Celebration.html.twig');
+
+        self::assertStringContainsString("## '".implode("'|'", CelebrationStream::EFFECTS)."' What is drawn;", $template);
     }
 
     public function testNoStyleIsWritten(): void

@@ -1,4 +1,4 @@
-<!-- phil-dev source-sha256=6b4617b2675b8987d75799e99e039ea3e42f328cfd8483739990e4a35fa2f4b4 -->
+<!-- phil-dev source-sha256=8cb2d8263a03727293fa5dc01cfa01298bc22cb1e5250dedbf35323c7d754a97 -->
 # Recettes
 
 Chaque recette a son propre README, avec des exemples, dans son dossier ; cette page rassemble leurs props. Chaque
@@ -1374,10 +1374,11 @@ l'action `copy`, l'événement `copy-button:copied`.
 
 `<twig:Celebration>` : un `div` de classe `isCelebration` : ce qui la joue, dans son bloc `content`, le paragraphe de
 classe `isCelebrationMessage`, une région active polie, et le `template` de son canvas, de classe
-`isCelebrationCanvas`, caché aux lecteurs d'écran. Contrôleur `celebration` : l'action `play`, dont les paramètres
-`message`, `effect` et `focus` remplacent les props ; l'événement DOM `celebrate`, émis sur n'importe quel élément ou sur
-la fenêtre, dont le `detail` peut donner un `message`, un `effect` et un `focus`, sélecteur ou élément ; un
-`<turbo-stream action="celebrate">`, qu'écrit `celebrate()` ; les événements `celebration:start` et `celebration:end`.
+`isCelebrationCanvas`, caché aux lecteurs d'écran ; avec `sounds`, un bouton de classe `isCelebrationSound` avant le message, `aria-pressed`
+tant que les sons sont activés. Contrôleur `celebration` : l'action `play`, dont les paramètres `message`, `effect`,
+`focus` et `reaction` remplacent les props, et l'action `toggleSound` ; l'événement DOM `celebrate`, émis sur n'importe
+quel élément ou sur la fenêtre, dont le `detail` peut donner un `message`, un `effect`, un `focus`, sélecteur ou élément,
+et une `reaction` ; un `<turbo-stream action="celebrate">`, qu'écrit `celebrate()` ; les événements `celebration:start` et `celebration:end`.
 Là où le mouvement est réduit, par le système ou par `data-motion="reduce"` sur un ancêtre, ou quand la personne a choisi
 `data-celebrations="none"`, le message seul ; `data-celebrations="discreet"` dessine 30 % des pièces pendant 60 % de la
 durée, tout comme les célébrations d'une session après la sixième, celles après la troisième dessinant la moitié des
@@ -1387,21 +1388,105 @@ sans prendre de clic, peint dans un worker sur un `OffscreenCanvas` là où le n
 suspendu tant que l'onglet est caché, et retiré à la fin ou quand l'élément quitte la page ; les couleurs celles de
 `--phil-color-brand-fill-loud`, `--phil-color-success-fill-loud`, `--phil-color-warning-fill-loud`,
 `--phil-color-danger-fill-loud` et `--phil-color-info-fill-loud`, résolues là où se trouve le canvas, puis résolues de
-nouveau quand le schéma de couleurs ou un attribut de la racine change pendant qu'elle joue.
+nouveau quand le schéma de couleurs ou un attribut de la racine change pendant qu'elle joue. La `wave` ne dessine rien :
+elle soulève les enfants de son focus, ou de `main`, 24 au plus, par des animations de l'API Web Animations ajoutées à
+leurs transformations. Un `drum-roll` dit son message quand son roulement finit, à 70 % de la durée. Les images de
+`shapes` et de `mascot` sont chargées à la connexion, et dessinées en images matricielles de 128 pixels de large ;
+`autoplay` les attend. Ses sons, produits par l'API Web Audio, jouent une fois que la personne les a activés, gardés sous
+`phil-celebrations-sound` dans le stockage local, et jamais avant un geste sur la page ; avec `vibrate`,
+`navigator.vibrate()` là où il existe, quand quelque chose est dessiné.
 
 | Prop | Par défaut | |
 |---|---|---|
 | `message` | `''` | Les mots de la victoire, dits quand elle joue, et affichés là où le mouvement est réduit |
 | `messages` | `[]` | Des mots dits à tour de rôle quand il n'y a pas de `message`, un au hasard chaque fois, différent du dernier ; `celebration_messages()` en donne un ensemble en anglais ou en français |
-| `effect` | `confetti` | Ce qui est dessiné : `confetti`, `fireworks`, `lasers`, `balloons`, `shooting-stars`, `streamers`, `coins`, `bubbles`, `aurora`, `spotlight` ou `trophy` ; `confetti` pour tout autre nom |
+| `effect` | `confetti` | Ce qui est dessiné : `confetti`, `fireworks`, `lasers`, `balloons`, `shooting-stars`, `streamers`, `coins`, `bubbles`, `aurora`, `spotlight`, `trophy`, `wave`, `rocket`, `rainbow`, `drum-roll`, `applause`, `reactions`, `shapes` ou `mascot` ; `confetti` pour tout autre nom |
 | `autoplay` | `false` | Si elle joue dès que la page l'affiche, le message, ou le premier des messages, écrit dans la page dès le départ |
 | `duration` | `2500` | La durée de l'animation, en millisecondes, que le contrôleur garde entre 600 et 4000 |
-| `focus` | `''` | Le sélecteur de ce qu'éclaire `spotlight` et de l'endroit où se pose `trophy` ; le milieu de l'écran sans lui |
+| `focus` | `''` | Le sélecteur de ce qu'éclaire `spotlight`, de l'endroit où se pose `trophy`, où décolle `rocket` et où roule `drum-roll`, et dont `wave` soulève les enfants ; le milieu de l'écran, ou `main` pour la vague, sans lui |
+| `reaction` | `''` | Ce que fait pleuvoir `reactions`, un émoji ou un mot court, huit caractères au plus ; 🎉 sans lui |
+| `shapes` | `[]` | Les adresses des images dans lesquelles tombe `shapes`, huit au plus ; des bandes de papier sans elles |
+| `mascot` | `''` | L'adresse de l'image que `mascot` fait sauter à travers l'écran ; un petit personnage au chapeau pointu sans elle |
+| `vibrate` | `false` | Si un appareil qui le peut vibre brièvement quand quelque chose est dessiné |
+| `sounds` | `false` | Si le bouton des sons est affiché ; muette jusqu'à ce que la personne les active |
+| `soundLabel` | `'Sounds'` | Le libellé du bouton des sons |
 
 | Fonction Twig | |
 |---|---|
-| `celebrate(message, effect, focus)` | Un `<turbo-stream action="celebrate">` avec les valeurs données, chacune échappée, un effet inconnu écrit `confetti` ; dans une réponse Turbo Stream, sur un sujet Mercure ou dans la page, il joue la `Celebration` de la page |
+| `celebrate(message, effect, focus, reaction)` | Un `<turbo-stream action="celebrate">` avec les valeurs données, chacune échappée, un effet inconnu écrit `confetti` ; dans une réponse Turbo Stream, sur un sujet Mercure ou dans la page, il joue la `Celebration` de la page |
 | `celebration_messages(locale)` | Les mots de louange d'une locale, ou de la requête, en anglais ou en français, l'anglais pour toute autre langue |
+
+## SeasonalDecor
+
+`<twig:SeasonalDecor>` : rien pour un décor inconnu ; sinon un `div` de classe `isSeasonalDecor`, qui ne prend aucune
+place : le coquelicot, un `svg` de classe `isSeasonalDecorPoppy` fixé dans un coin, pour le décor `poppy` ; le `template`
+de son canvas, de classe `isSeasonalDecorCanvas`, et celui d'un œuf, un bouton de classe `isSeasonalEgg` ; le paragraphe
+de classe `isSeasonalDecorCounter`, une région active polie ; le bouton de classe `isSeasonalDecorClose`, caché jusqu'à
+ce que le contrôleur le montre. Contrôleur `seasonal-decor` : l'action `close`, et un clic sur chaque œuf, qui écoute
+lui-même, les nids se trouvant hors du contrôleur ; les événements `seasonal-decor:closed`, `seasonal-decor:found`, dont
+le `detail` donne `found` et `total`, `seasonal-decor:hunted` et `seasonal-decor:code` ; l'événement DOM `celebrate` sur
+la fenêtre quand le dernier œuf est trouvé et quand le code est tapé. Les pièces bougent pendant la `duration` et
+s'estompent pendant ses 1,5 dernières secondes ; une image fixe là où le mouvement est réduit, par le système ou par
+`data-motion="reduce"` sur un ancêtre, ou un jour sobre ; rien quand la personne a choisi `data-celebrations="none"`,
+sauf un décor sobre. La fermeture et les œufs trouvés sont retenus dans le stockage local sous
+`phil-seasonal-decor:closed:<holiday>` et `phil-seasonal-decor:eggs:<holiday>`.
+
+| Prop | Par défaut | |
+|---|---|---|
+| `decor` | `''` | Ce qui est dessiné : `snow`, `hearts`, `clovers`, `eggs`, `bats`, `leaves`, `petals`, `lanterns`, `maple-leaves`, `fleurs-de-lis` ou `poppy` ; rien pour tout autre nom |
+| `holiday` | `''` | Sous quoi la fermeture et les œufs trouvés sont retenus, en règle générale `seasonal_decor().id` ; pour la page seule sans lui |
+| `sober` | `false` | Un jour du souvenir : une image fixe, pas de chasse, pas de code ; toujours pour le coquelicot |
+| `closeLabel` | `Hide the decorations` | Le nom du bouton qui le ferme |
+| `eggs` | `0` | Combien d'œufs se cachent dans les éléments marqués `data-egg-nest`, dans le décor sans eux |
+| `eggLabel` | `A hidden egg` | Le nom de chaque œuf |
+| `counter` | `Eggs found: %found% of %total%` | Ce que dit la chasse à chaque œuf trouvé |
+| `hunted` | `Every egg found!` | Ce qui est dit, et célébré, quand le dernier œuf est trouvé |
+| `code` | Le code Konami | Les touches du code secret, séparées par des espaces, comme les nomme `KeyboardEvent.key` ; aucune quand il est vide |
+| `codeMessage` | `You found the secret code!` | Ce que dit la `Celebration` de la page quand le code est tapé |
+| `codeEffect` | `fireworks` | L'effet qu'elle joue alors, et quand le dernier œuf est trouvé |
+| `duration` | `12000` | Combien de temps le décor bouge, en millisecondes, que le contrôleur garde entre 2000 et 15000 |
+
+| Fonction Twig | |
+|---|---|
+| `seasonal_decor(at)` | La fête où tombe un moment, maintenant sans argument, une date ou un texte lu dans le fuseau horaire de `phil_ux_kit.seasonal.time_zone` : ses `key`, `title`, `decor`, `sober`, `start` et `id`, la clé et le premier jour ; une fête sobre d'abord, puis la première de la liste ; null un jour sans fête, ou tant que `phil_ux_kit.seasonal.enabled` est false, ce qu'il est par défaut |
+
+## Podium
+
+`<twig:Podium>` : un `div` de classe `isPodium` : la liste ordonnée de classe `isPodiumPlaces`, nommée par `label`, des
+trois premiers de `places`, chacun un `isPodiumPlace` avec son `data-place`, son nom, `isPodiumName`, son score,
+`isPodiumScore`, quand il en a un, et sa marche, `isPodiumStep`, cachée aux lecteurs d'écran ; ce qui suit, dans son bloc
+`content` ; le paragraphe de classe `isPodiumMessage`, une région active polie. Contrôleur `podium` : l'action `rise` ;
+`data-state` sur le podium, `waiting`, puis `rising`, puis `risen` 1,2 seconde plus tard pour trois places, la troisième
+montant la première ; l'événement `podium:risen` et, avec un `effect`, l'événement DOM `celebrate` sur la fenêtre. Là où
+le mouvement est réduit, par le système ou par `data-motion="reduce"` sur un ancêtre, les places sont debout dès le
+départ.
+
+| Prop | Par défaut | |
+|---|---|---|
+| `places` | `[]` | Les trois premiers du classement, dans leur ordre, chacun un `name` et un `score` facultatif ; les suivants laissés de côté |
+| `label` | `Podium` | Le nom de la liste, pour les lecteurs d'écran |
+| `message` | `''` | Ce qui est dit une fois qu'ils sont debout sur leurs marches |
+| `effect` | `''` | L'effet que joue la `Celebration` de la page une fois qu'ils sont debout ; aucun quand il est vide |
+| `autoplay` | `true` | Si elles montent dès que le podium entre dans la vue ; sinon par l'action `podium#rise` |
+
+## ScratchCard
+
+`<twig:ScratchCard>` : un `div` de classe `isScratchCard` : le prix, dans son bloc `content`, dans un `div` de classe
+`isScratchCardPrize` ; le `template` de sa couverture, un canvas de classe `isScratchCardCover` ; le bouton de classe
+`isScratchCardButton`, caché jusqu'à ce que le contrôleur le montre ; le paragraphe de classe `isScratchCardMessage`, une
+région active polie. Contrôleur `scratch-card` : les actions `press`, `scratch` et `release` du pointeur sur la
+couverture, et `reveal` ; l'événement `scratch-card:revealed` et, avec un `effect`, l'événement DOM `celebrate` sur la
+fenêtre. Tant qu'il est couvert, le prix est `aria-hidden` et `inert` ; la part grattée est comptée sur une grille de 12
+par 8 cellules ; une fois révélée, la couverture s'estompe en 300 millisecondes, d'un coup là où le mouvement est
+réduit, et le focus passe au prix quand il était sur le bouton. La couverture est peinte en
+`--phil-color-neutral-fill-loud`.
+
+| Prop | Par défaut | |
+|---|---|---|
+| `label` | `Reveal` | Les mots du bouton qui révèle le prix d'un coup |
+| `message` | `''` | Ce qui est dit une fois le prix révélé ; son texte quand il est vide |
+| `threshold` | `50` | La part de la couverture, en pourcentage, qui révèle le prix une fois grattée, gardée entre 10 et 90 |
+| `effect` | `''` | L'effet que joue la `Celebration` de la page une fois le prix révélé ; aucun quand il est vide |
 
 ## AnimatedButton
 

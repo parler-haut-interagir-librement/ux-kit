@@ -1361,9 +1361,10 @@ action `copy`, the event `copy-button:copied`.
 
 `<twig:Celebration>`: a `div` of class `isCelebration`: what plays it, in its block `content`, the paragraph of class
 `isCelebrationMessage`, a polite live region, and the `template` of its canvas, of class `isCelebrationCanvas`, hidden
-from screen readers. Controller `celebration`: the action `play`, whose params `message`, `effect` and `focus` stand in
-for the props; the DOM event `celebrate`, dispatched on any element or on the window, whose `detail` may give a
-`message`, an `effect` and a `focus`, a selector or an element; a `<turbo-stream action="celebrate">`, which
+from screen readers; with `sounds`, a button of class `isCelebrationSound` before the message, `aria-pressed` while the
+sounds are on. Controller `celebration`: the action `play`, whose params `message`, `effect`, `focus` and `reaction`
+stand in for the props, and the action `toggleSound`; the DOM event `celebrate`, dispatched on any element or on the
+window, whose `detail` may give a `message`, an `effect`, a `focus`, a selector or an element, and a `reaction`; a `<turbo-stream action="celebrate">`, which
 `celebrate()` writes; the events `celebration:start` and `celebration:end`. Where motion is reduced, by the system or
 by `data-motion="reduce"` on an ancestor, or where the person chose `data-celebrations="none"`, the message alone;
 `data-celebrations="discreet"` draws 30 % of the pieces for 60 % of the run, and so do the celebrations of a session
@@ -1373,21 +1374,102 @@ page through the CSSOM, without taking a click, painted in a worker on an `Offsc
 on the page otherwise, held while the tab is hidden, and removed at the end or when the element leaves the page; the
 colours those of `--phil-color-brand-fill-loud`, `--phil-color-success-fill-loud`, `--phil-color-warning-fill-loud`,
 `--phil-color-danger-fill-loud` and `--phil-color-info-fill-loud`, resolved where the canvas stands, and resolved again
-when the colour scheme or an attribute of the root changes while it plays.
+when the colour scheme or an attribute of the root changes while it plays. The `wave` draws nothing: it lifts the
+children of its focus, or of `main`, 24 at most, by animations of the Web Animations API added to their transforms. A
+`drum-roll` says its message when its roll ends, 70 % of the run. The images of `shapes` and `mascot` are loaded when it
+connects, and drawn into bitmaps of 128 pixels across; `autoplay` waits for them. Its sounds, made by the Web Audio API,
+play once the person turned them on, kept under `phil-celebrations-sound` in the local storage, and never before a
+gesture on the page; with `vibrate`, `navigator.vibrate()` where it exists, when something is drawn.
 
 | Prop | Default | |
 |---|---|---|
 | `message` | `''` | The words of the victory, said when it plays, and shown where motion is reduced |
 | `messages` | `[]` | Words said in turn when there is no `message`, one at random each time, another than the last; `celebration_messages()` gives a set in English or French |
-| `effect` | `confetti` | What is drawn: `confetti`, `fireworks`, `lasers`, `balloons`, `shooting-stars`, `streamers`, `coins`, `bubbles`, `aurora`, `spotlight` or `trophy`; `confetti` for any other name |
+| `effect` | `confetti` | What is drawn: `confetti`, `fireworks`, `lasers`, `balloons`, `shooting-stars`, `streamers`, `coins`, `bubbles`, `aurora`, `spotlight`, `trophy`, `wave`, `rocket`, `rainbow`, `drum-roll`, `applause`, `reactions`, `shapes` or `mascot`; `confetti` for any other name |
 | `autoplay` | `false` | Whether it plays as soon as the page shows it, the message, or the first of the messages, written in the page from the start |
 | `duration` | `2500` | How long the animation runs, in milliseconds, kept by the controller between 600 and 4000 |
-| `focus` | `''` | The selector of what `spotlight` lights and where `trophy` lands; the middle of the screen without one |
+| `focus` | `''` | The selector of what `spotlight` lights, where `trophy` lands, `rocket` takes off and `drum-roll` rolls, and whose children `wave` lifts; the middle of the screen, or `main` for the wave, without one |
+| `reaction` | `''` | What `reactions` rains, an emoji or a short word, eight characters at most; 🎉 without one |
+| `shapes` | `[]` | The addresses of the images `shapes` falls in, eight at most; strips of paper without them |
+| `mascot` | `''` | The address of the image that `mascot` hops across the screen; a little figure in a pointed hat without one |
+| `vibrate` | `false` | Whether a device that can vibrates briefly when something is drawn |
+| `sounds` | `false` | Whether the button of the sounds is shown; silent until the person turns them on |
+| `soundLabel` | `'Sounds'` | The label of the button of the sounds |
 
 | Twig function | |
 |---|---|
-| `celebrate(message, effect, focus)` | A `<turbo-stream action="celebrate">` with the values given, each escaped, an unknown effect written as `confetti`; in a Turbo Stream response, on a Mercure topic or in the page, it plays the `Celebration` of the page |
+| `celebrate(message, effect, focus, reaction)` | A `<turbo-stream action="celebrate">` with the values given, each escaped, an unknown effect written as `confetti`; in a Turbo Stream response, on a Mercure topic or in the page, it plays the `Celebration` of the page |
 | `celebration_messages(locale)` | The words of praise of a locale, or of the request, in English or in French, English for any other language |
+
+## SeasonalDecor
+
+`<twig:SeasonalDecor>`: nothing for an unknown decor; otherwise a `div` of class `isSeasonalDecor`, which takes no room:
+the poppy, an `svg` of class `isSeasonalDecorPoppy` fixed in a corner, for the decor `poppy`; the `template` of its
+canvas, of class `isSeasonalDecorCanvas`, and that of an egg, a button of class `isSeasonalEgg`; the paragraph of class
+`isSeasonalDecorCounter`, a polite live region; the button of class `isSeasonalDecorClose`, hidden until the controller
+shows it. Controller `seasonal-decor`: the action `close`, and a click on each egg, which listens itself, the nests lying
+outside the controller; the events `seasonal-decor:closed`,
+`seasonal-decor:found`, whose `detail` gives `found` and `total`, `seasonal-decor:hunted` and `seasonal-decor:code`; the
+DOM event `celebrate` on the window when the last egg is found and when the code is typed. The pieces move for the
+`duration` and fade over its last 1.5 seconds; a still picture where motion is reduced, by the system or by
+`data-motion="reduce"` on an ancestor, or on a sober day; nothing where the person chose `data-celebrations="none"`, but
+a sober decor. The closing and the eggs found are kept in the local storage under `phil-seasonal-decor:closed:<holiday>`
+and `phil-seasonal-decor:eggs:<holiday>`.
+
+| Prop | Default | |
+|---|---|---|
+| `decor` | `''` | What is drawn: `snow`, `hearts`, `clovers`, `eggs`, `bats`, `leaves`, `petals`, `lanterns`, `maple-leaves`, `fleurs-de-lis` or `poppy`; nothing for any other name |
+| `holiday` | `''` | What the closing and the eggs found are remembered under, `seasonal_decor().id` as a rule; for the page alone without one |
+| `sober` | `false` | A day of remembrance: a still picture, no hunt, no code; always for the poppy |
+| `closeLabel` | `Hide the decorations` | The name of the button that closes it |
+| `eggs` | `0` | How many eggs hide in the elements marked `data-egg-nest`, in the decor without one |
+| `eggLabel` | `A hidden egg` | The name of each egg |
+| `counter` | `Eggs found: %found% of %total%` | What the hunt says as each egg is found |
+| `hunted` | `Every egg found!` | What is said, and celebrated, when the last egg is found |
+| `code` | The Konami code | The keys of the secret code, separated by spaces, as `KeyboardEvent.key` names them; none when empty |
+| `codeMessage` | `You found the secret code!` | What the `Celebration` of the page says when the code is typed |
+| `codeEffect` | `fireworks` | The effect it plays then, and when the last egg is found |
+| `duration` | `12000` | How long the decor moves, in milliseconds, kept by the controller between 2000 and 15000 |
+
+| Twig function | |
+|---|---|
+| `seasonal_decor(at)` | The holiday a moment falls in, now without one, a date or a text read in the time zone of `phil_ux_kit.seasonal.time_zone`: its `key`, `title`, `decor`, `sober`, `start` and `id`, the key and the first day; a sober holiday first, then the first of the list; null on a day of none, or while `phil_ux_kit.seasonal.enabled` is false, which it is by default |
+
+## Podium
+
+`<twig:Podium>`: a `div` of class `isPodium`: the ordered list of class `isPodiumPlaces`, named by `label`, of the first
+three of `places`, each an `isPodiumPlace` with its `data-place`, its name, `isPodiumName`, its score, `isPodiumScore`,
+when it has one, and its step, `isPodiumStep`, hidden from screen readers; what follows, in its block `content`; the
+paragraph of class `isPodiumMessage`, a polite live region. Controller `podium`: the action `rise`; `data-state` on the
+podium, `waiting`, then `rising`, then `risen` 1.2 seconds later for three places, the third rising first; the event
+`podium:risen` and, with an `effect`, the DOM event `celebrate` on the window. Where motion is reduced, by the system or
+by `data-motion="reduce"` on an ancestor, the places stand from the start.
+
+| Prop | Default | |
+|---|---|---|
+| `places` | `[]` | The first three of the ranking, in their order, each a `name` and an optional `score`; any more left out |
+| `label` | `Podium` | The name of the list, for screen readers |
+| `message` | `''` | What is said once they stand on their steps |
+| `effect` | `''` | The effect the `Celebration` of the page plays once they stand; none when empty |
+| `autoplay` | `true` | Whether they rise as soon as the podium comes into view; otherwise by the action `podium#rise` |
+
+## ScratchCard
+
+`<twig:ScratchCard>`: a `div` of class `isScratchCard`: the prize, in its block `content`, in a `div` of class
+`isScratchCardPrize`; the `template` of its cover, a canvas of class `isScratchCardCover`; the button of class
+`isScratchCardButton`, hidden until the controller shows it; the paragraph of class `isScratchCardMessage`, a polite live
+region. Controller `scratch-card`: the actions `press`, `scratch` and `release` of the pointer on the cover, and
+`reveal`; the event `scratch-card:revealed` and, with an `effect`, the DOM event `celebrate` on the window. While it is
+covered, the prize is `aria-hidden` and `inert`; the share scratched away is counted on a grid of 12 by 8 cells; once
+revealed, the cover fades in 300 milliseconds, at once where motion is reduced, and the focus goes to the prize when it
+was on the button. The cover is painted in `--phil-color-neutral-fill-loud`.
+
+| Prop | Default | |
+|---|---|---|
+| `label` | `Reveal` | The words of the button that reveals the prize at once |
+| `message` | `''` | What is said once the prize is revealed; its text when empty |
+| `threshold` | `50` | The share of the cover, in percent, that reveals the prize once scratched away, kept between 10 and 90 |
+| `effect` | `''` | The effect the `Celebration` of the page plays once the prize is revealed; none when empty |
 
 ## AnimatedButton
 
